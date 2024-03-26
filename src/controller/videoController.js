@@ -35,19 +35,6 @@ exports.uploadVideo = async (req, res) => {
     const result = await cloudinary.uploader.upload(req.file.path, {
       resource_type: 'video'
     });
-
-    // Fetch video metadata to check duration
-    const videoInfo = await cloudinary.v2.api.resource(result.public_id, {
-      resource_type: 'video'
-    });
-
-    // Check if video duration exceeds 30 seconds
-    if (videoInfo.duration > 30) {
-      // Delete the uploaded video from Cloudinary
-      await cloudinary.uploader.destroy(result.public_id);
-      return res.status(400).json({ message: 'Video duration exceeds 30 seconds' });
-    }
-
     const post = await Post.create({
       postTitle,
       postImage: result?.secure_url,
@@ -59,7 +46,7 @@ exports.uploadVideo = async (req, res) => {
 
     return res.status(201).json({
       status: "201",
-      message: "Post created successfully",
+      message: "Post created successfully by",
       data: post,
     });
   } catch (error) {
