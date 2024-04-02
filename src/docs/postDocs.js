@@ -373,3 +373,73 @@
  */
 
 
+/**
+ * @swagger
+ * /PostgreSQL/API/posts/add:
+ *   post:
+ *     summary: Add a new post
+ *     tags:
+ *       - Posts
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               postImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: The image file for the post
+ *               postTitle:
+ *                 type: string
+ *                 description: The title of the post
+ *               postContent:
+ *                 type: string
+ *                 description: The content of the post
+ *     responses:
+ *       '201':
+ *         description: Post created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: '201'
+ *                 message:
+ *                   type: string
+ *                   example: 'Post created successfully'
+ *       '400':
+ *         description: Bad request, some fields are empty or post title already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: '400'
+ *                 message:
+ *                   type: string
+ *                   example: 'Some fields are empty or Post title exists in the database'
+ *       '500':
+ *         description: Internal Server Error, failed to create a post
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: '500'
+ *                 message:
+ *                   type: string
+ *                   example: 'Failed to create a post'
+ *                 error:
+ *                   type: string
+ *                   example: 'Error message details'
+ */
+
+

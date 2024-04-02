@@ -41,12 +41,99 @@ export const addPost = async (req, res) => {
       postContent,
       userId: loggedUser, 
     });
+    const getPosts = await Post.findAll({
+      attributes: [
+        
+        'id',
+        'postTitle',
+        'postImage',
+        'postContent',
+        'views',
+        'createdAt',
+        [
+          Sequelize.literal(`(
+            SELECT COUNT(*) 
+            FROM "Likes"
+            WHERE "Likes"."postId" = "Posts"."id"
+          )`),
+          'allLikes',
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT COUNT(*) 
+            FROM "unLikes"
+            WHERE "unLikes"."postId" = "Posts"."id"
+          )`),
+          'allUnlikes',
+        ],
+        [
+          Sequelize.literal(`(
+            SELECT COUNT(*) 
+            FROM "Comments"
+            WHERE "Comments"."postId" = "Posts"."id"
+          )`),
+          'allComents',
+        ],
+      ],
+      include: [
+        {
+          model: User,
+          as: 'postedBy',
+          attributes: ['firstName','lastName','profile','email','role','createdAt'],
+        },
+
+        {
+          model: Comment,
+          attributes: ['commentBody','createdAt','updatedAt'],
+          include: [
+            {
+              model: User,
+              as: 'CommentedBy',
+              attributes: ['firstName','lastName','profile','email','role','createdAt'],
+            },
+            {
+              model: Reply,
+              attributes: ['replyMessage','createdAt','updatedAt'],
+              include: [
+                {
+                  model: User,
+                  as: 'repliedBy',
+                  attributes: ['firstName','lastName','profile','email','role','createdAt'],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: Likes,
+          attributes: ['createdAt'],
+          include:[
+            {
+              model: User,
+              as: 'likedBy',
+              attributes: ['firstName','lastName','profile','email','role','createdAt'],
+            }
+          ]
+        },
+        {
+          model: unLikes,
+          attributes: ['createdAt'],
+          include:[
+            {
+              model: User,
+              as: 'unLikedBy',
+              attributes: ['firstName','lastName','profile','email','role','createdAt'],
+            }
+          ]
+        }
+      ],
+    });
     
 
     return res.status(201).json({
       status: "201",
       message: "Post created successfully by",
-      data: post,
+      data: getPosts,
     });
   } catch (error) {
     if (error.name === "SequelizeValidationError") {
@@ -304,9 +391,97 @@ export const getSinglePost = async (req, res) => {
         postTitle,postImage:saveUpdatedImage?. secure_url,postContent
       }
       const updatedPost = await Post.update(values,{where:{id:id}});
+      const getPosts = await Post.findAll({
+        attributes: [
+          
+          'id',
+          'postTitle',
+          'postImage',
+          'postContent',
+          'views',
+          'createdAt',
+          [
+            Sequelize.literal(`(
+              SELECT COUNT(*) 
+              FROM "Likes"
+              WHERE "Likes"."postId" = "Posts"."id"
+            )`),
+            'allLikes',
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT COUNT(*) 
+              FROM "unLikes"
+              WHERE "unLikes"."postId" = "Posts"."id"
+            )`),
+            'allUnlikes',
+          ],
+          [
+            Sequelize.literal(`(
+              SELECT COUNT(*) 
+              FROM "Comments"
+              WHERE "Comments"."postId" = "Posts"."id"
+            )`),
+            'allComents',
+          ],
+        ],
+        include: [
+          {
+            model: User,
+            as: 'postedBy',
+            attributes: ['firstName','lastName','profile','email','role','createdAt'],
+          },
+
+          {
+            model: Comment,
+            attributes: ['commentBody','createdAt','updatedAt'],
+            include: [
+              {
+                model: User,
+                as: 'CommentedBy',
+                attributes: ['firstName','lastName','profile','email','role','createdAt'],
+              },
+              {
+                model: Reply,
+                attributes: ['replyMessage','createdAt','updatedAt'],
+                include: [
+                  {
+                    model: User,
+                    as: 'repliedBy',
+                    attributes: ['firstName','lastName','profile','email','role','createdAt'],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Likes,
+            attributes: ['createdAt'],
+            include:[
+              {
+                model: User,
+                as: 'likedBy',
+                attributes: ['firstName','lastName','profile','email','role','createdAt'],
+              }
+            ]
+          },
+          {
+            model: unLikes,
+            attributes: ['createdAt'],
+            include:[
+              {
+                model: User,
+                as: 'unLikedBy',
+                attributes: ['firstName','lastName','profile','email','role','createdAt'],
+              }
+            ]
+          }
+        ],
+      });
       return res.status(201).json({
         status: "201",
         message: "Post update success",
+        posts:getPosts
       });
     } catch (error) {
       if (error.name === "SequelizeValidationError") {

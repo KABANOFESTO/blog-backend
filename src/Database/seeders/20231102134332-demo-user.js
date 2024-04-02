@@ -1,7 +1,7 @@
 'use strict';
+
 const bcrypt = require("bcrypt");
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     const saltRounds = 10; // Number of salt rounds for bcrypt
@@ -19,14 +19,31 @@ module.exports = {
       updatedAt: new Date()
     }], {});
 
+    await queryInterface.bulkInsert('Messages', [
+      {
+        names: 'John Doe',
+        email: 'john@example.com',
+        subject: 'Hello',
+        message: 'This is a sample message.',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        names: 'Jane Smith',
+        email: 'jane@example.com',
+        subject: 'Greetings',
+        message: 'Just wanted to say hi!',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      // Add more sample data as needed
+    ], {});
+
   },
 
   async down(queryInterface, Sequelize) {
-    /**
-     * Add commands to revert seed here.
-     *
-     * Example:
-     * await queryInterface.bulkDelete('People', null, {});
-     */
+    // Add commands to revert seed data here
+    await queryInterface.bulkDelete('Users', null, {});
+    await queryInterface.bulkDelete('Messages', null, {});
   }
 };

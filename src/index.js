@@ -9,6 +9,7 @@ import cors from "cors";
 
 import userRoute from "./routes/userRoute";
 import postRoute from "./routes/postRoute";
+import messagesRoute from "./routes/messageRoute";
 import commentRoute from "./routes/commentRoute";
 import replyRoute from "./routes/replyRoute";
 import likeRoute from "./routes/likeRoute";
@@ -83,6 +84,7 @@ app.use("/PostgreSQL/API", commentRoute);
 app.use("/PostgreSQL/API", replyRoute);
 app.use("/PostgreSQL/API", likeRoute);
 app.use("/PostgreSQL/API", dislikeRoute);
+app.use("/PostgreSQL/API", messagesRoute);
 app.get("/", (req, res) =>{
     res.status(200).json({
         status: "200",
