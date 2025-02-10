@@ -9,26 +9,20 @@ cloudinary.config({
   api_secret: process.env.API_SECRET,
 });
 
-export const uploadToCloud = async (file, res) => {
+export const uploadToCloud = async (file) => {
   try {
     let options = {
-      folder: "KlabTasks",
+      folder: "BlogPosts",
       use_filename: true,
+      unique_filename: true,
+      overwrite: false,
+      resource_type: "auto" // This will automatically detect if it's an image or video
     };
-
-    // Determine whether the file is an image or a video based on its MIME type
-   
-    if (file.mimetype.startsWith('image')) {
-      options.resource_type = 'image';
-    } else if (file.mimetype.startsWith('video')) {
-      options.resource_type = 'video';
-    } else {
-      throw new Error('Invalid file type');
-    }
 
     const uploadedFile = await cloudinary.uploader.upload(file.path, options);
     return uploadedFile;
   } catch (error) {
-    return res.status(500).send(error);
+    console.error('Cloudinary upload error:', error);
+    throw error;
   }
 };

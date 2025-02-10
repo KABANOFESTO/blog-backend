@@ -14,6 +14,7 @@ import commentRoute from "./routes/commentRoute";
 import replyRoute from "./routes/replyRoute";
 import likeRoute from "./routes/likeRoute";
 import dislikeRoute from "./routes/dislikeRoute";
+import quoteRoute from "./routes/quoteRoute";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 
@@ -85,6 +86,7 @@ app.use("/PostgreSQL/API", replyRoute);
 app.use("/PostgreSQL/API", likeRoute);
 app.use("/PostgreSQL/API", dislikeRoute);
 app.use("/PostgreSQL/API", messagesRoute);
+app.use("/PostgreSQL/API", quoteRoute);
 app.get("/", (req, res) =>{
     res.status(200).json({
         status: "200",
