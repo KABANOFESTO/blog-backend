@@ -1,91 +1,114 @@
-import { Messages } from "../Database/models";
+import  Messages  from "../Database/models/messages.js";
 
 export const getAllMessages = async (req, res) => {
   try {
-    // Fetch all messages from the database
-    const allMessages = await Messages.findAll();
+    const allMessages = await Messages.findAll({
+      order: [['createdAt', 'DESC']] // Order by newest first
+    });
 
-    // Respond with the retrieved messages
-    res.status(200).json({
+    return res.status(200).json({
+      status: "200",
       success: true,
-      messages: allMessages
+      message: "Messages retrieved successfully",
+      data: allMessages
     });
   } catch (error) {
-    // If an error occurs, respond with an error message
     console.error("Error fetching messages:", error);
-    res.status(500).json({
+    return res.status(500).json({
+      status: "500",
       success: false,
-      error: "Internal server error"
+      message: "Failed to retrieve messages",
+      error: error.message
     });
   }
 };
-
 
 export const addMessage = async (req, res) => {
   try {
-
     const { names, email, subject, message } = req.body;
-    if (!names || !email || !subject || !message) {
+
+    // Validate required fields
+    if (!names?.trim() || !email?.trim() || !subject?.trim() || !message?.trim()) {
       return res.status(400).json({
         status: "400",
-        message: "All Fields Are Required",
+        success: false,
+        message: "All fields are required",
       });
     }
 
-    const verifyEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!verifyEmail.test(email)) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
       return res.status(400).json({
         status: "400",
-        message: "Invalid Email",
+        success: false,
+        message: "Please provide a valid email address",
       });
     }
 
-    // Create a new message record in the database
+    // Create new message
     const newMessage = await Messages.create({
-      names,
-      email,
-      subject,
-      message,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      names: names.trim(),
+      email: email.trim(),
+      subject: subject.trim(),
+      message: message.trim()
     });
 
-    // Respond with the newly created message
-    res.status(201).json({
+    return res.status(201).json({
+      status: "201",
       success: true,
-      message: "Message added successfully",
+      message: "Message sent successfully",
       data: newMessage
     });
   } catch (error) {
-    // If an error occurs, respond with an error message
     console.error("Error adding message:", error);
-    res.status(500).json({
+    return res.status(500).json({
+      status: "500",
       success: false,
-      error: "Internal server error"
+      message: "Failed to send message",
+      error: error.message
     });
   }
 };
 
-
 export const deleteMessage = async (req, res) => {
   try {
-    const Id = req.params.id;
+    const { id } = req.params;
 
-    // Check if the message exists
-    const message = await Messages.findByPk(Id);
-    if (!message) {
-      return res.status(404).json({ success: false, error: 'Message not found' });
+    // Validate ID
+    if (!id) {
+      return res.status(400).json({
+        status: "400",
+        success: false,
+        message: "Message ID is required"
+      });
     }
 
-    // Delete the message
+    // Check if message exists
+    const message = await Messages.findByPk(id);
+    if (!message) {
+      return res.status(404).json({
+        status: "404",
+        success: false,
+        message: "Message not found"
+      });
+    }
+
+    // Delete message
     await message.destroy();
 
-    res.status(200).json({
+    return res.status(200).json({
+      status: "200",
       success: true,
-      message: 'Message deleted successfully'
+      message: "Message deleted successfully"
     });
   } catch (error) {
     console.error('Error deleting message:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({
+      status: "500",
+      success: false,
+      message: "Failed to delete message",
+      error: error.message
+    });
   }
 };

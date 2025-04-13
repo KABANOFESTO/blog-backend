@@ -1,21 +1,23 @@
 import express from "express";
 import { 
-    createUser,
-    userLogin,
-    getUsers,
-    getSingleUser,
-    updateUser,
-    deleteUser,
-    deleteAllUsers,
- } from "../controller/userController";
- import fileUpload from "../helper/multer";
+    registerUser,
+    loginUser,
+    getAllUsers,
+    getUserProfile,
+    updateUserProfile,
+    deleteUserAccount,
+    changeUserRole,
+ } from "../controller/userController.js";
+import fileUpload from "../helper/multer.js";
 
- const userRoute = express.Router();
- userRoute.post("/users/signUp",fileUpload.single("profile"),createUser);
- userRoute.post("/users/login",fileUpload.single("profile"),userLogin);
- userRoute.get("/users/get/users",getUsers);
- userRoute.get("/users/get/single/:id",getSingleUser);
- userRoute.put("/users/update/:id",fileUpload.single("profile"),updateUser);
- userRoute.delete("/users/delete/:id",deleteUser );
- userRoute.delete("/users/delete/",deleteAllUsers );
- export default userRoute;
+const userRoute = express.Router();
+
+userRoute.post("/signup", fileUpload.single("profile"), registerUser);
+userRoute.post("/login", loginUser);
+userRoute.get("/", getAllUsers);
+userRoute.get("/:id", getUserProfile);
+userRoute.put("/:id", fileUpload.single("profile"), updateUserProfile);
+userRoute.delete("/:id", deleteUserAccount);
+// For deleteAllUsers, you might need to create that function or adjust based on your needs
+
+export default userRoute;

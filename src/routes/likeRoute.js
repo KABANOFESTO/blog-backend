@@ -1,10 +1,11 @@
 import express from "express";
-import fileUpload from "../helper/multer";
-import { normalUserAuthentication } from "../middleware/Authentication";
+import fileUpload from "../helper/multer.js";
+import { normalUserAuthentication } from "../middleware/Authentication.js";
+
 
 import { 
     likePost,
- } from "../controller/likesController";
+ } from "../controller/likesController.js";
  
 
  const likeRoute = express.Router();

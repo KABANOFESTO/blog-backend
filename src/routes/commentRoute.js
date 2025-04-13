@@ -1,13 +1,14 @@
 import express from "express";
-import fileUpload from "../helper/multer";
-import { normalUserAuthentication,adminAuthorization } from "../middleware/Authentication";
+import fileUpload from "../helper/multer.js";
+
+import { normalUserAuthentication,adminAuthorization } from "../middleware/Authentication.js";
 
 import { 
     addComment,
     getAllComments,
     getSingleComment,
     deleteComment,
-} from "../controller/commentController";
+} from "../controller/commentController.js";
 
 const commentRoute = express.Router();
 commentRoute.post("/comments/add/:id",normalUserAuthentication,fileUpload.single("postImage"), addComment);

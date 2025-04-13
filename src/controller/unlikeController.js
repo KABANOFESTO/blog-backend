@@ -1,31 +1,33 @@
-import { unLikes, Likes } from "../Database/models";
+import Unlike from "../Database/models/unlikes.js";
+import Like from "../Database/models/likes.js";
 
-//dis like a post
-
+// Dislike a post
 export const disLikePost = async (req, res) => {
   try {
     const { postId } = req.params;
     const userId = req.loggedInUser.id;
 
-    const existingDislike = await unLikes.findOne({where: { postId, userId },});
+    // Check if dislike already exists
+    const existingDislike = await Unlike.findOne({ postId, userId });
 
     if (existingDislike) {
-      await existingDislike.destroy();
-      res.status(200).json({ message: "Your dislike removed" });
-    } else {
-      const existingLike = await Likes.findOne({ where: { postId, userId } });
-      if (existingLike) {
-        await existingLike.destroy();
-      }
-      await unLikes.create({ postId, userId });
-      res.status(200).json({ message: "Post disliked" });
+      // Remove the dislike
+      await Unlike.deleteOne({ _id: existingDislike._id });
+      return res.status(200).json({ message: "Your dislike removed" });
     }
+
+    // Check if like exists and remove it
+    const existingLike = await Like.findOne({ postId, userId });
+    if (existingLike) {
+      await Like.deleteOne({ _id: existingLike._id });
+    }
+
+    // Create new dislike
+    await Unlike.create({ postId, userId });
+    return res.status(200).json({ message: "Post disliked" });
+
   } catch (error) {
-    if (error.name === "SequelizeValidationError") {
-      console.error("Validation errors:", error.errors);
-    } else {
-      console.error("Unhandled error:", error);
-    }
+    console.error("Error in disLikePost:", error);
     return res.status(500).json({
       status: "500",
       message: "Failed to add or remove dislike",

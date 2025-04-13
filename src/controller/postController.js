@@ -1,29 +1,121 @@
-import Database from "../Database/models";
-import { uploadToCloud } from "../helper/cloud";
-import { Sequelize } from "sequelize";
+import Post from "../Database/models/post.js";
+import User from "../Database/models/user.js";
+import Comment from "../Database/models/comment.js";
+import Like from "../Database/models/likes.js";
+import Unlike from "../Database/models/unlikes.js";
+import { uploadToCloud } from "../helper/cloud.js";
+import mongoose from "mongoose";
+import { fileURLToPath } from 'url';
+import path from 'path';
+import fs from 'fs';
 
-const { Posts, Users } = require('../Database/models');
-const path = require('path');
-const fs = require('fs');
-
-
-const User = Database["Users"];
-const Post = Database["Posts"];
-const Comment = Database["Comments"];
-const Reply = Database["Replies"];
-const Likes = Database["Likes"];
-const unLikes = Database["unLikes"];
-
+// Get directory path - Fix for import.meta issue
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const uploadDir = path.join(__dirname, '../uploads');
+
+// Create upload directory if it doesn't exist
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+// Add this to your postController.js (at the bottom before the exports)
+export const likePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user._id;
+
+    // Check if like already exists
+    const existingLike = await Like.findOne({ post: postId, user: userId });
+
+    if (existingLike) {
+      // Remove the like
+      await Like.deleteOne({ _id: existingLike._id });
+      
+      // Decrement likes count on post
+      await Post.findByIdAndUpdate(postId, { $inc: { likesCount: -1 } });
+      
+      return res.status(200).json({ message: "Your like removed" });
+    }
+
+    // Check if dislike exists and remove it
+    const existingDislike = await Unlike.findOne({ post: postId, user: userId });
+    if (existingDislike) {
+      await Unlike.deleteOne({ _id: existingDislike._id });
+      await Post.findByIdAndUpdate(postId, { $inc: { unlikesCount: -1 } });
+    }
+
+    // Create new like
+    await Like.create({ post: postId, user: userId });
+    
+    // Increment likes count on post
+    await Post.findByIdAndUpdate(postId, { $inc: { likesCount: 1 } });
+
+    return res.status(200).json({ message: "Your like added" });
+
+  } catch (error) {
+    console.error("Error in likePost:", error);
+    return res.status(500).json({
+      status: "500",
+      message: "Failed to add or remove like",
+      error: error.message,
+    });
+  }
+};
+
+export const unLikePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const userId = req.user._id;
+
+    // Check if unlike already exists
+    const existingUnlike = await Unlike.findOne({ post: postId, user: userId });
+
+    if (existingUnlike) {
+      // Remove the unlike
+      await Unlike.deleteOne({ _id: existingUnlike._id });
+      
+      // Decrement unlikes count on post
+      await Post.findByIdAndUpdate(postId, { $inc: { unlikesCount: -1 } });
+      
+      return res.status(200).json({ message: "Your dislike removed" });
+    }
+
+    // Check if like exists and remove it
+    const existingLike = await Like.findOne({ post: postId, user: userId });
+    if (existingLike) {
+      await Like.deleteOne({ _id: existingLike._id });
+      await Post.findByIdAndUpdate(postId, { $inc: { likesCount: -1 } });
+    }
+
+    // Create new unlike
+    await Unlike.create({ post: postId, user: userId });
+    
+    // Increment unlikes count on post
+    await Post.findByIdAndUpdate(postId, { $inc: { unlikesCount: 1 } });
+
+    return res.status(200).json({ message: "Your dislike added" });
+
+  } catch (error) {
+    console.error("Error in unLikePost:", error);
+    return res.status(500).json({
+      status: "500",
+      message: "Failed to add or remove dislike",
+      error: error.message,
+    });
+  }
+};
 
 // Get all categories
 export const getCategories = async (req, res) => {
   try {
-    const categories = ['FAITH & SPIRITUALITY', 'PERSONAL GROWTH', 'GROWTH & SELF DISCOVERY', 'KINDNESS & COMPASSION', 'VLOG'];
+    const categories = [
+      'FAITH & SPIRITUALITY', 
+      'PERSONAL GROWTH', 
+      'GROWTH & SELF DISCOVERY', 
+      'KINDNESS & COMPASSION', 
+      'VLOG'
+    ];
 
     return res.status(200).json({
       status: "200",
@@ -39,10 +131,10 @@ export const getCategories = async (req, res) => {
   }
 };
 
-// Add a new post
-exports.addPost = async (req, res) => {
+// Rest of the file remains unchanged
+export const addPost = async (req, res) => {
   try {
-    const loggedUser = req.loggedInUser.id;
+    const loggedUser = req.user._id; // Changed from req.loggedInUser
     const { postTitle, postContent, category } = req.body;
 
     // Input validation
@@ -69,10 +161,8 @@ exports.addPost = async (req, res) => {
     }
 
     // Check for duplicate title
-    const checkTitle = await Posts.findOne({  // Update Post to Posts
-      where: {
-        postTitle: postTitle.trim()
-      }
+    const checkTitle = await Post.findOne({
+      postTitle: postTitle.trim()
     });
 
     if (checkTitle) {
@@ -86,7 +176,6 @@ exports.addPost = async (req, res) => {
     let postImage = null;
     if (req.file) {
       try {
-        // Upload to cloudinary
         const result = await uploadToCloud(req.file);
         postImage = result.secure_url;
       } catch (error) {
@@ -100,22 +189,17 @@ exports.addPost = async (req, res) => {
     }
 
     // Create post
-    const post = await Posts.create({
+    const post = await Post.create({
       postTitle: postTitle.trim(),
       postImage,
       postContent: postContent.trim(),
       category,
-      userId: loggedUser,
+      author: loggedUser,
     });
 
-    // Fetch created post with user details
-    const createdPost = await Posts.findByPk(post.id, {
-      include: [{
-        model: Users,  // Update User to Users
-        as: 'postedBy',
-        attributes: ['id', 'firstName', 'lastName', 'email', 'profile']
-      }]
-    });
+    // Populate author details
+    const createdPost = await Post.findById(post._id)
+      .populate('author', 'firstName lastName email profile');
 
     return res.status(201).json({
       status: "201",
@@ -137,28 +221,66 @@ exports.addPost = async (req, res) => {
 export const getAllPosts = async (req, res) => {
   try {
     const { category } = req.query;
-    const whereClause = category ? { category } : {};
+    const filter = category ? { category } : {};
 
-    const getPosts = await Post.findAll({
-      where: whereClause,
-      attributes: getDefaultAttributes(),
-      include: getDefaultIncludes(),
-    });
+    const posts = await Post.find(filter)
+      .sort({ createdAt: -1 })
+      .populate('author', 'firstName lastName profile')
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'author',
+          select: 'firstName lastName profile'
+        }
+      })
+      .populate({
+        path: 'likes',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName profile'
+        }
+      })
+      .populate({
+        path: 'unlikes',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName profile'
+        }
+      });
 
-    if (getPosts.length === 0 && category) {
+    if (category && posts.length === 0) {
       return res.status(404).json({
         status: "404",
         message: `No posts found in category: ${category}`,
       });
     }
 
+    // Add counts to each post
+    const postsWithCounts = await Promise.all(posts.map(async post => {
+      const likesCount = await Like.countDocuments({ post: post._id });
+      const unlikesCount = await Unlike.countDocuments({ post: post._id });
+      const commentsCount = await Comment.countDocuments({ post: post._id });
+      
+      return {
+        ...post.toObject(),
+        likesCount,
+        unlikesCount,
+        commentsCount
+      };
+    }));
+
     return res.status(200).json({
       status: "200",
       message: "Posts retrieved successfully",
-      data: getPosts,
+      data: postsWithCounts,
     });
   } catch (error) {
-    handleError(error, res, "Failed to retrieve posts");
+    console.error('Error getting posts:', error);
+    return res.status(500).json({
+      status: "500",
+      message: "Failed to retrieve posts",
+      error: error.message
+    });
   }
 };
 
@@ -167,11 +289,15 @@ export const getPostsByCategory = async (req, res) => {
   try {
     const { category } = req.params;
 
-    const posts = await Post.findAll({
-      where: { category },
-      attributes: getDefaultAttributes(),
-      include: getDefaultIncludes(),
-    });
+    const posts = await Post.find({ category })
+      .populate('author', 'firstName lastName profile')
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'author',
+          select: 'firstName lastName profile'
+        }
+      });
 
     if (posts.length === 0) {
       return res.status(404).json({
@@ -186,7 +312,12 @@ export const getPostsByCategory = async (req, res) => {
       data: posts,
     });
   } catch (error) {
-    handleError(error, res, "Failed to retrieve posts");
+    console.error('Error getting posts by category:', error);
+    return res.status(500).json({
+      status: "500",
+      message: "Failed to retrieve posts",
+      error: error.message
+    });
   }
 };
 
@@ -194,28 +325,82 @@ export const getPostsByCategory = async (req, res) => {
 export const getSinglePost = async (req, res) => {
   try {
     const { id } = req.params;
-    const getPost = await Post.findByPk(id, {
-      attributes: getDefaultAttributes(),
-      include: getDefaultIncludes(),
-    });
 
-    if (!getPost) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: "400",
+        message: "Invalid post ID",
+      });
+    }
+
+    const post = await Post.findByIdAndUpdate(
+      id,
+      { $inc: { views: 1 } },
+      { new: true }
+    )
+      .populate('author', 'firstName lastName profile')
+      .populate({
+        path: 'comments',
+        populate: [
+          {
+            path: 'author',
+            select: 'firstName lastName profile'
+          },
+          {
+            path: 'replies',
+            populate: {
+              path: 'author',
+              select: 'firstName lastName profile'
+            }
+          }
+        ]
+      })
+      .populate({
+        path: 'likes',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName profile'
+        }
+      })
+      .populate({
+        path: 'unlikes',
+        populate: {
+          path: 'user',
+          select: 'firstName lastName profile'
+        }
+      });
+
+    if (!post) {
       return res.status(404).json({
         status: "404",
         message: "Post not found",
       });
     }
 
-    getPost.views += 1;
-    await getPost.save();
+    // Get counts
+    const likesCount = await Like.countDocuments({ post: post._id });
+    const unlikesCount = await Unlike.countDocuments({ post: post._id });
+    const commentsCount = await Comment.countDocuments({ post: post._id });
+
+    const postWithCounts = {
+      ...post.toObject(),
+      likesCount,
+      unlikesCount,
+      commentsCount
+    };
 
     return res.status(200).json({
       status: "200",
       message: "Post retrieved successfully",
-      data: getPost,
+      data: postWithCounts,
     });
   } catch (error) {
-    handleError(error, res, "Failed to retrieve post");
+    console.error('Error getting single post:', error);
+    return res.status(500).json({
+      status: "500",
+      message: "Failed to retrieve post",
+      error: error.message
+    });
   }
 };
 
@@ -223,48 +408,75 @@ export const getSinglePost = async (req, res) => {
 export const updatePost = async (req, res) => {
   try {
     const { id } = req.params;
-    const { postTitle, postImage, postContent, category } = req.body;
+    const { postTitle, postContent, category } = req.body;
 
-    const checkPostId = await Post.findByPk(id);
-    if (!checkPostId) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: "400",
+        message: "Invalid post ID",
+      });
+    }
+
+    const post = await Post.findById(id);
+    if (!post) {
       return res.status(404).json({
         status: "404",
         message: "Post not found",
       });
     }
 
-    const checkPostTitle = await Post.findOne({ where: { postTitle: req.body.postTitle } });
-    if (checkPostTitle && checkPostTitle.id != id) {
-      return res.status(400).json({
-        status: "400",
-        message: "This post title exists in database",
+    // Check if user is author or admin
+    if (post.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: "403",
+        message: "You can only update your own posts",
       });
     }
 
-    let saveUpdatedImage;
-    if (req.file) saveUpdatedImage = await uploadToCloud(req.file, res);
+    // Check for duplicate title
+    if (postTitle) {
+      const existingPost = await Post.findOne({ 
+        postTitle: postTitle.trim(),
+        _id: { $ne: id } // Exclude current post
+      });
+      
+      if (existingPost) {
+        return res.status(400).json({
+          status: "400",
+          message: "This post title already exists",
+        });
+      }
+    }
 
-    const values = {
-      postTitle,
-      postImage: saveUpdatedImage?.secure_url,
-      postContent,
-      category
+    // Handle file upload
+    let updatedImage;
+    if (req.file) {
+      updatedImage = await uploadToCloud(req.file);
+    }
+
+    const updateData = {
+      postTitle: postTitle || post.postTitle,
+      postContent: postContent || post.postContent,
+      category: category || post.category,
+      postImage: updatedImage ? updatedImage.secure_url : post.postImage
     };
 
-    await Post.update(values, { where: { id } });
-
-    const getPosts = await Post.findAll({
-      attributes: getDefaultAttributes(),
-      include: getDefaultIncludes(),
-    });
+    const updatedPost = await Post.findByIdAndUpdate(id, updateData, { 
+      new: true 
+    }).populate('author', 'firstName lastName profile');
 
     return res.status(200).json({
       status: "200",
       message: "Post updated successfully",
-      posts: getPosts
+      data: updatedPost
     });
   } catch (error) {
-    handleError(error, res, "Failed to update post");
+    console.error('Error updating post:', error);
+    return res.status(500).json({
+      status: "500",
+      message: "Failed to update post",
+      error: error.message
+    });
   }
 };
 
@@ -272,122 +484,50 @@ export const updatePost = async (req, res) => {
 export const deletePost = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkPostId = await Post.findByPk(id);
-    if (!checkPostId) {
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: "400",
+        message: "Invalid post ID",
+      });
+    }
+
+    const post = await Post.findById(id);
+    if (!post) {
       return res.status(404).json({
         status: "404",
         message: "Post not found",
       });
     }
 
-    await Post.destroy({ where: { id } });
+    // Check if user is author or admin
+    if (post.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        status: "403",
+        message: "You can only delete your own posts",
+      });
+    }
+
+    // Delete all related data
+    await Promise.all([
+      Comment.deleteMany({ post: id }),
+      Like.deleteMany({ post: id }),
+      Unlike.deleteMany({ post: id })
+    ]);
+
+    await Post.findByIdAndDelete(id);
 
     return res.status(200).json({
       status: "200",
       message: `Post with ID ${id} deleted successfully`,
-      data: checkPostId,
+      data: post
     });
   } catch (error) {
-    handleError(error, res, "Failed to delete post");
+    console.error('Error deleting post:', error);
+    return res.status(500).json({
+      status: "500",
+      message: "Failed to delete post",
+      error: error.message
+    });
   }
-};
-
-// Helper functions
-const getDefaultAttributes = () => [
-  'id',
-  'postTitle',
-  'postImage',
-  'postContent',
-  'category',
-  'views',
-  'createdAt',
-  [
-    Sequelize.literal(`(
-      SELECT COUNT(*) 
-      FROM "Likes"
-      WHERE "Likes"."postId" = "Posts"."id"
-    )`),
-    'allLikes',
-  ],
-  [
-    Sequelize.literal(`(
-      SELECT COUNT(*) 
-      FROM "unLikes"
-      WHERE "unLikes"."postId" = "Posts"."id"
-    )`),
-    'allUnlikes',
-  ],
-  [
-    Sequelize.literal(`(
-      SELECT COUNT(*) 
-      FROM "Comments"
-      WHERE "Comments"."postId" = "Posts"."id"
-    )`),
-    'allComments',
-  ],
-];
-
-const getDefaultIncludes = () => [
-  {
-    model: User,
-    as: 'postedBy',
-    attributes: ['firstName', 'lastName', 'profile', 'email', 'role', 'createdAt'],
-  },
-  {
-    model: Comment,
-    attributes: ['commentBody', 'createdAt', 'updatedAt'],
-    include: [
-      {
-        model: User,
-        as: 'CommentedBy',
-        attributes: ['firstName', 'lastName', 'profile', 'email', 'role', 'createdAt'],
-      },
-      {
-        model: Reply,
-        attributes: ['replyMessage', 'createdAt', 'updatedAt'],
-        include: [
-          {
-            model: User,
-            as: 'repliedBy',
-            attributes: ['firstName', 'lastName', 'profile', 'email', 'role', 'createdAt'],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    model: Likes,
-    attributes: ['createdAt'],
-    include: [
-      {
-        model: User,
-        as: 'likedBy',
-        attributes: ['firstName', 'lastName', 'profile', 'email', 'role', 'createdAt'],
-      }
-    ]
-  },
-  {
-    model: unLikes,
-    attributes: ['createdAt'],
-    include: [
-      {
-        model: User,
-        as: 'unLikedBy',
-        attributes: ['firstName', 'lastName', 'profile', 'email', 'role', 'createdAt'],
-      }
-    ]
-  }
-];
-
-const handleError = (error, res, defaultMessage) => {
-  if (error.name === "SequelizeValidationError") {
-    console.error("Validation errors:", error.errors);
-  } else {
-    console.error("Unhandled error:", error);
-  }
-  return res.status(500).json({
-    status: "500",
-    message: defaultMessage,
-    error: error.message,
-  });
 };

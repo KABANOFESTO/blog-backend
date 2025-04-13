@@ -1,4 +1,4 @@
-import Database from "../Database/models";
+import Database from "../Database/models/comment.js";
 import { Sequelize } from "sequelize";
 
 const Post = Database["Posts"];

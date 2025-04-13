@@ -1,58 +1,78 @@
-// models/post.js
-'use strict';
-const { Model } = require('sequelize');
+import mongoose from 'mongoose';
 
-module.exports = (sequelize, DataTypes) => {
-  class Posts extends Model {
-    static associate(models) {
-      Posts.belongsTo(models.Users, {
-        foreignKey: "userId",
-        onDelete: "CASCADE",
-        onUpdate: "CASCADE",
-        as: "postedBy"
-      });
-      Posts.hasMany(models.Comments, {
-        foreignKey: 'postId',
-      });
-      Posts.hasMany(models.Likes, {
-        foreignKey: 'postId',
-      });
-      Posts.hasMany(models.unLikes, {
-        foreignKey: 'postId',
-      });
-    }
+const postSchema = new mongoose.Schema({
+  postTitle: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  postImage: String,
+  postContent: {
+    type: String,
+    required: true
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: ['FAITH & SPIRITUALITY', 'PERSONAL GROWTH & SELF DISCOVERY', 'KINDNESS & COMPASSION', 'VLOG'],
+    uppercase: true
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Users',
+    required: true
+  },
+  views: {
+    type: Number,
+    default: 0
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
+});
 
-  Posts.init({
-    postTitle: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true
-      }
-    },
-    postImage: DataTypes.STRING,
-    postContent: {
-      type: DataTypes.TEXT('long'),
-      allowNull: false
-    },
-    category: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-        isIn: [['FAITH & SPIRITUALITY', 'PERSONAL GROWTH & SELF DISCOVERY', 'KINDNESS & COMPASSION', 'VLOG']]
-      }
-    },
-    userId: DataTypes.INTEGER,
-    views: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
-    }
-  }, {
-    sequelize,
-    modelName: 'Posts',
-  });
+// Virtual population for relationships
+postSchema.virtual('postedBy', {
+  ref: 'Users',
+  localField: 'userId',
+  foreignField: '_id',
+  justOne: true
+});
 
-  return Posts;
-};
+postSchema.virtual('comments', {
+  ref: 'Comments',
+  localField: '_id',
+  foreignField: 'postId'
+});
+
+postSchema.virtual('likes', {
+  ref: 'Likes',
+  localField: '_id',
+  foreignField: 'postId'
+});
+
+postSchema.virtual('unLikes', {
+  ref: 'unLikes',
+  localField: '_id',
+  foreignField: 'postId'
+});
+
+// Ensure virtual fields are included when converting to JSON
+postSchema.set('toJSON', { virtuals: true });
+postSchema.set('toObject', { virtuals: true });
+
+// Add timestamp middleware
+postSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+const Posts = mongoose.model('Posts', postSchema);
+
+export default Posts;
+

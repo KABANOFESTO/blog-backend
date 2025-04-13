@@ -1,12 +1,12 @@
 import express from "express";
-import { adminAuthorization } from "../middleware/Authentication";
+import { adminAuthorization } from "../middleware/Authentication.js";
 import {
   addQuote,
   getAllQuotes,
   getSingleQuote,
   updateQuote,
   deleteQuote
-} from "../controller/quoteController";
+} from "../controller/quoteController.js";
 
 const quoteRoute = express.Router();
 

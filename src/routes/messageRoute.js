@@ -1,13 +1,10 @@
 import express from "express";
-import { getAllMessages,addMessage,deleteMessage} from "../controller/messagesController";
+import { getAllMessages, addMessage, deleteMessage } from "../controller/messagesController.js";
 
+const messagesRoute = express.Router();
 
-const postRoute = express.Router();
+messagesRoute.get("/messages/get/all", getAllMessages);
+messagesRoute.post("/messages/add", addMessage);
+messagesRoute.delete("/messages/delete/:id", deleteMessage);
 
-postRoute.get("/mesages/get/all",getAllMessages);
-postRoute.post("/mesages/add",addMessage);
-postRoute.delete("/mesages/delete/:id",deleteMessage);
-
-export default postRoute;
-
-
+export default messagesRoute;

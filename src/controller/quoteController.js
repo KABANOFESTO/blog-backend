@@ -1,6 +1,5 @@
-import Database from "../Database/models";
-const Quote = Database["Quote"];
-const User = Database["Users"];
+import User from "../Database/models/user.js";
+import Quote from "../Database/models/quote.js";
 
 // Add a new quote
 export const addQuote = async (req, res) => {

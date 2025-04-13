@@ -1,10 +1,7 @@
-import Database from "../Database/models";
-
-
-const Post = Database["Posts"];
-const User = Database["Users"];
-const Comment = Database["Comments"]
-const Replies = Database["Replies"];
+import User from "../Database/models/user.js";
+import Post from "../Database/models/post.js";
+import Comment from "../Database/models/comment.js";
+import Replies from "../Database/models/reply.js";
 
 export const addReply = async (req,res) =>{
     try {
@@ -191,4 +188,3 @@ export const getReply = async (req, res) => {
       });
       }
   }
-  

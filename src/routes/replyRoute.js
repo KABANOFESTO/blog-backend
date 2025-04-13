@@ -1,13 +1,15 @@
 import express from "express";
-import fileUpload from "../helper/multer";
-import { normalUserAuthentication,adminAuthorization } from "../middleware/Authentication";
+import fileUpload from "../helper/multer.js";
+import { normalUserAuthentication,adminAuthorization } from "../middleware/Authentication.js";
+
+
 
 import { 
     addReply,
     getAll,
     getReply,
     deleteReply,
- } from "../controller/replyController";
+ } from "../controller/replyController.js";
 
 const replyRoute = express.Router();
 replyRoute.post("/replies/add/:id",normalUserAuthentication,fileUpload.single("postImage"),addReply);

@@ -1,6 +1,6 @@
 
 import  Jwt  from "jsonwebtoken";
-import Database from "../Database/models";
+import Database from "../Database/models/user.js";
 
 const Users = Database["Users"]
 

@@ -1,38 +1,52 @@
-module.exports = (sequelize, DataTypes) => {
-  const Quote = sequelize.define('Quote', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    quoteText: {
-      type: DataTypes.TEXT,
-      allowNull: false
-    },
-    author: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    category: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    userId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'Users',
-        key: 'id'
-      }
-    }
-  }, {});
+import mongoose from 'mongoose';
 
-  Quote.associate = function(models) {
-    Quote.belongsTo(models.Users, {
-      foreignKey: 'userId',
-      as: 'user'
-    });
-  };
+const quoteSchema = new mongoose.Schema({
+  quoteText: {
+    type: String,
+    required: true
+  },
+  author: {
+    type: String,
+    required: true
+  },
+  category: {
+    type: String,
+    required: true
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Users',
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
 
-  return Quote;
-};
+// Virtual for user relationship (replaces Sequelize association)
+quoteSchema.virtual('user', {
+  ref: 'Users',
+  localField: 'userId',
+  foreignField: '_id',
+  justOne: true
+});
+
+// Include virtuals in JSON output
+quoteSchema.set('toJSON', { virtuals: true });
+quoteSchema.set('toObject', { virtuals: true });
+
+// Update timestamp on save
+quoteSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+const Quote = mongoose.model('Quote', quoteSchema);
+
+
+export default Quote;
