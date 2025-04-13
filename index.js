@@ -4,16 +4,16 @@ import dotenv from "dotenv";
 import morgan from "morgan";
 import cors from "cors";
 // Import database configuration
-import connectDB from "../src/Database/config/config.js";
+import connectDB from "./src/Database/config/config.js";
 // importing routes
-import userRoute from "./routes/userRoute.js";
-import postRoute from "./routes/postRoute.js";
-import messagesRoute from "./routes/messageRoute.js";
-import commentRoute from "./routes/commentRoute.js";
-import replyRoute from "./routes/replyRoute.js";
-import likeRoute from "./routes/likeRoute.js";
-import dislikeRoute from "./routes/dislikeRoute.js";
-import quoteRoute from "./routes/quoteRoute.js";
+import userRoute from "./src/routes/userRoute.js";
+import postRoute from "./src/routes/postRoute.js";
+import messagesRoute from "./src/routes/messageRoute.js";
+import commentRoute from "./src/routes/commentRoute.js";
+import replyRoute from "./src/routes/replyRoute.js";
+import likeRoute from "./src/routes/likeRoute.js";
+import dislikeRoute from "./src/routes/dislikeRoute.js";
+import quoteRoute from "./src/routes/quoteRoute.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 
@@ -85,7 +85,7 @@ app.get("/", (req, res) => {
 });
 
 // Server startup
-const PORT = process.env.PORT || 2300;
+const PORT = process.env.PORT || 2400;
 app.listen(PORT, () => {
   console.log(`Server is running on port:http://localhost:${PORT}`);
 });
